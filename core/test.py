@@ -16,6 +16,8 @@ import utils.network_utils
 
 from datetime import datetime as dt
 
+from tensorboardX import SummaryWriter
+
 from models.encoder import Encoder
 from models.decoder import Decoder
 from models.merger import Merger
@@ -37,6 +39,10 @@ def test_net(cfg,
     with open(cfg.DATASETS[cfg.DATASET.TEST_DATASET.upper()].TAXONOMY_FILE_PATH, encoding='utf-8') as file:
         taxonomies = json.loads(file.read())
     taxonomies = {t['taxonomy_id']: t for t in taxonomies}
+    
+    # Set up output dir
+    if output_dir is None:
+        output_dir = '/home/caig/Desktop/pix2vox/Pix2Vox/outputs/%s/'
 
     # Set up data loader
     if test_data_loader is None:
@@ -57,6 +63,9 @@ def test_net(cfg,
                                                        num_workers=1,
                                                        pin_memory=True,
                                                        shuffle=False)
+    # Set up tensorboard
+    if test_writer is None:
+        test_writer = SummaryWriter()    
 
     # Set up networks
     if decoder is None or encoder is None:
@@ -129,16 +138,16 @@ def test_net(cfg,
             test_iou[taxonomy_id]['iou'].append(sample_iou)
 
             # Append generated volumes to TensorBoard
-            if output_dir and sample_idx < 3:
+            if sample_idx % 1000 == 0:
                 img_dir = output_dir % 'images'
                 # Volume Visualization
                 gv = generated_volume.cpu().numpy()
                 rendering_views = utils.binvox_visualization.get_volume_views(gv, os.path.join(img_dir, 'test'),
-                                                                              epoch_idx)
+                                                                              sample_idx)
                 test_writer.add_image('Test Sample#%02d/Volume Reconstructed' % sample_idx, rendering_views, epoch_idx)
                 gtv = ground_truth_volume.cpu().numpy()
-                rendering_views = utils.binvox_visualization.get_volume_views(gtv, os.path.join(img_dir, 'test'),
-                                                                              epoch_idx)
+                rendering_views = utils.binvox_visualization.get_volume_views(gtv, os.path.join(img_dir, 'test_gt'),
+                                                                              sample_idx)
                 test_writer.add_image('Test Sample#%02d/Volume GroundTruth' % sample_idx, rendering_views, epoch_idx)
 
             # Print sample loss and IoU
