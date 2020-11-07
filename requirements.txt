@@ -1,9 +1,8 @@
 argparse
 easydict
-matplotlib
+matplotlib==3.0.3
 numpy
 opencv-python
-pprint
 scipy
 torchvision
-tensorboardX
+tensorboardX==1.2.0
